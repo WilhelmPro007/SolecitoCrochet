@@ -1,0 +1,9 @@
+backend/SolecitoCrochet/__pycache__/
+backend/SolecitoCrochet/settings/__pycache__/
+backend/apps/orders/__pycache__/
+backend/apps/orders/migrations/__pycache__/
+backend/apps/products/__pycache__/
+backend/apps/products/migrations/__pycache__/
+backend/apps/users/__pycache__/
+backend/apps/users/migrations/__pycache__/
+
