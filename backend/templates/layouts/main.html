@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SolecitoCrochet{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Utilidades -->
+    <script src="{% static 'js/utils/formatters.js' %}"></script>
+    <script src="{% static 'js/utils/api.js' %}"></script>
+    
+    <!-- Store -->
+    <script src="{% static 'js/store/cart.js' %}"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50">
+    {% include 'components/navbar.html' %}
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'components/footer.html' %}
+</body>
+</html> 

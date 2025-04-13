@@ -15,8 +15,38 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import TemplateView
+from django.contrib.auth import views as auth_views
+from apps.users.views import RegisterView
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
+    
+    # Authentication URLs
+    path('login/', auth_views.LoginView.as_view(template_name='pages/auth/login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+    path('register/', RegisterView.as_view(), name='register'),
+    
+    # API URLs
+    path('api/v1/', include([
+        path('products/', include('apps.products.api_urls')),
+        path('orders/', include('apps.orders.api_urls')),
+        path('users/', include('apps.users.api_urls')),
+    ])),
+    path('api-auth/', include('rest_framework.urls')),
+    
+    # Frontend URLs
+    path('', TemplateView.as_view(template_name='pages/home/landing.html'), name='home'),
+    path('products/', include('apps.products.urls', namespace='products')),
+    path('orders/', include('apps.orders.urls', namespace='orders')),
+    path('users/', include('apps.users.urls', namespace='users')),
 ]
+
+# Servir archivos media en desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

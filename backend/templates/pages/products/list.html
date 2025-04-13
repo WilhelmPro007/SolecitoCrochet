@@ -1,0 +1,20 @@
+{% extends 'layouts/main.html' %}
+{% load static %}
+
+{% block title %}Productos - SolecitoCrochet{% endblock %}
+
+{% block extra_head %}
+<script src="{% static 'js/components/productList.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="productList">
+    {% include 'components/products/product_filters.html' %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="product in filteredProducts" :key="product.id">
+            {% include 'components/products/product_card.html' %}
+        </template>
+    </div>
+</div>
+{% endblock %} 

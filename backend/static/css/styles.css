@@ -1,0 +1,28 @@
+/* Animaciones para la landing page */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 1s ease-out;
+}
+
+/* Estilos para el hero section */
+.hero-gradient {
+    background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
+}
+
+/* Estilos para las tarjetas de testimonios */
+.testimonial-card {
+    transition: transform 0.3s ease;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Estilos para el formulario de contacto */
+.form-input:focus {
+    box-shadow: 0 0 0 2px rgba(219, 39, 119, 0.2);
+} 

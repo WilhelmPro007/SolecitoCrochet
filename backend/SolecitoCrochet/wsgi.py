@@ -12,8 +12,8 @@ from django.core.wsgi import get_wsgi_application
 from pathlib import Path
 
 # Agregar la carpeta "apps" al PYTHONPATH
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 os.sys.path.append(str(BASE_DIR / 'apps'))
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SolecitoCrochet.settings.production')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SolecitoCrochet.settings.base')  # Asegurarnos que apunte a SolecitoCrochet
 application = get_wsgi_application()

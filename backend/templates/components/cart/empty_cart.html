@@ -1,0 +1,10 @@
+{% load static %}
+<template x-if="items.length === 0">
+    <div class="text-center py-8">
+        <p class="text-gray-600">Tu carrito está vacío</p>
+        <a href="{% url 'products:list' %}" 
+           class="mt-4 inline-block text-pink-600 hover:text-pink-800">
+            Continuar comprando
+        </a>
+    </div>
+</template> 

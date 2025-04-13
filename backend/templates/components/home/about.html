@@ -1,0 +1,37 @@
+{% load static %}
+<div id="about" class="bg-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="text-3xl font-bold mb-6">Sobre SolecitoCrochet</h2>
+                <p class="text-gray-600 mb-4">
+                    En SolecitoCrochet, cada pieza es una obra de arte única, tejida a mano 
+                    con dedicación y amor. Nuestra pasión por el crochet se refleja en la 
+                    calidad y el detalle de cada producto.
+                </p>
+                <p class="text-gray-600 mb-6">
+                    Utilizamos los mejores materiales y técnicas tradicionales para crear 
+                    piezas que no solo son hermosas, sino también duraderas y funcionales.
+                </p>
+                <div class="grid grid-cols-3 gap-6 text-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-pink-600">100+</h3>
+                        <p class="text-gray-600">Productos Únicos</p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-pink-600">500+</h3>
+                        <p class="text-gray-600">Clientes Felices</p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-pink-600">5⭐</h3>
+                        <p class="text-gray-600">Calificación</p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <img src="{% static 'images/about-1.jpg' %}" alt="Proceso de tejido" class="rounded-lg">
+                <img src="{% static 'images/about-2.jpg' %}" alt="Productos terminados" class="rounded-lg mt-8">
+            </div>
+        </div>
+    </div>
+</div> 

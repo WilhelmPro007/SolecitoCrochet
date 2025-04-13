@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - SolecitoCrochet{% endblock %}
+
+{% block content %}
+<div x-data="productDetail">
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="md:flex">
+            <!-- Imagen del producto -->
+            <div class="md:flex-shrink-0">
+                <img class="h-96 w-full object-cover md:w-96" 
+                     src="{{ product.image.url }}" 
+                     alt="{{ product.name }}">
+            </div>
+            
+            <!-- Detalles del producto -->
+            <div class="p-8">
+                <div class="uppercase tracking-wide text-sm text-pink-600 font-semibold">
+                    {{ product.category.name }}
+                </div>
+                <h1 class="mt-2 text-3xl font-bold text-gray-900">
+                    {{ product.name }}
+                </h1>
+                <p class="mt-4 text-gray-600">
+                    {{ product.description }}
+                </p>
+                
+                <!-- Precio y stock -->
+                <div class="mt-6">
+                    <div class="text-2xl font-bold text-pink-600">
+                        S/. {{ product.price }}
+                    </div>
+                    <div class="mt-2 text-gray-600">
+                        Stock disponible: {{ product.stock }}
+                    </div>
+                </div>
+                
+                <!-- Formulario de compra -->
+                <div class="mt-6" x-data="{ quantity: 1 }">
+                    <div class="flex items-center space-x-4">
+                        <label class="text-gray-700">Cantidad:</label>
+                        <div class="flex items-center border rounded">
+                            <button @click="quantity = Math.max(1, quantity - 1)"
+                                    class="px-3 py-1 border-r hover:bg-gray-100">
+                                -
+                            </button>
+                            <input type="number" 
+                                   x-model="quantity"
+                                   min="1"
+                                   :max="product.stock"
+                                   class="w-16 text-center py-1 border-none focus:ring-0">
+                            <button @click="quantity = Math.min(product.stock, quantity + 1)"
+                                    class="px-3 py-1 border-l hover:bg-gray-100">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button @click="addToCart(quantity)"
+                            :disabled="product.stock <= 0"
+                            class="mt-6 w-full bg-pink-600 text-white py-3 px-6 rounded-lg hover:bg-pink-700 disabled:bg-gray-400">
+                        Agregar al carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('productDetail', () => ({
+        addToCart(quantity) {
+            const item = {
+                id: {{ product.id }},
+                name: '{{ product.name }}',
+                price: {{ product.price }},
+                quantity: quantity
+            }
+            
+            // Dispatch event to update cart
+            this.$dispatch('add-to-cart', item)
+            
+            // Show confirmation message
+            alert('Producto agregado al carrito')
+        }
+    }))
+})
+</script>
+{% endblock %} 

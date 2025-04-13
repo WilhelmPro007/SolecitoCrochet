@@ -1,0 +1,25 @@
+<div class="bg-white py-16" x-data="featuredProducts">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold text-center mb-12">Productos Destacados</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <template x-for="product in products" :key="product.id">
+                <div class="group relative">
+                    <div class="aspect-w-4 aspect-h-3 rounded-lg overflow-hidden">
+                        <img :src="product.image" 
+                             :alt="product.name"
+                             class="object-cover object-center transform group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="text-lg font-medium text-gray-900" x-text="product.name"></h3>
+                        <p class="text-pink-600 font-bold mt-1" x-text="formatPrice(product.price)"></p>
+                        <button @click="addToCart(product)"
+                                class="mt-2 w-full bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors">
+                            Agregar al carrito
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div> 

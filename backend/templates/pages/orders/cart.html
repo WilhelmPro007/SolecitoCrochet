@@ -1,0 +1,25 @@
+{% extends 'layouts/main.html' %}
+{% load static %}
+
+{% block title %}Carrito - SolecitoCrochet{% endblock %}
+
+{% block extra_head %}
+<script src="{% static 'js/components/cart.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="cart">
+    <h1 class="text-2xl font-bold mb-6">Mi Carrito</h1>
+
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <template x-if="items.length > 0">
+            <div>
+                {% include 'components/cart/cart_items.html' %}
+                {% include 'components/cart/cart_summary.html' %}
+            </div>
+        </template>
+
+        {% include 'components/cart/empty_cart.html' %}
+    </div>
+</div>
+{% endblock %} 

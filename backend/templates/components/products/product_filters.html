@@ -1,0 +1,19 @@
+<div class="mb-6 bg-white p-4 rounded-lg shadow">
+    <div class="flex flex-wrap gap-4">
+        <div class="flex-1">
+            <input type="text" 
+                   x-model="searchQuery" 
+                   placeholder="Buscar productos..."
+                   class="w-full px-4 py-2 border rounded-lg">
+        </div>
+        <div class="w-48">
+            <select x-model="selectedCategory"
+                    class="w-full px-4 py-2 border rounded-lg">
+                <option value="">Todas las categorías</option>
+                <template x-for="category in categories" :key="category.id">
+                    <option :value="category.id" x-text="category.name"></option>
+                </template>
+            </select>
+        </div>
+    </div>
+</div>

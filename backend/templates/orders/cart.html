@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Carrito - SolecitoCrochet{% endblock %}
+
+{% block content %}
+<div x-data="cart">
+    <h1 class="text-2xl font-bold mb-6">Mi Carrito</h1>
+
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <template x-if="items.length > 0">
+            <div>
+                <!-- Items del carrito -->
+                <div class="space-y-4">
+                    <template x-for="item in items" :key="item.id">
+                        <div class="flex items-center justify-between border-b pb-4">
+                            <div class="flex items-center space-x-4">
+                                <img :src="item.image" :alt="item.name" class="w-16 h-16 object-cover rounded">
+                                <div>
+                                    <h3 x-text="item.name" class="font-semibold"></h3>
+                                    <p class="text-gray-600" x-text="formatPrice(item.price)"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center border rounded">
+                                    <button @click="updateQuantity(item, -1)"
+                                            class="px-3 py-1 border-r hover:bg-gray-100">
+                                        -
+                                    </button>
+                                    <span class="px-4 py-1" x-text="item.quantity"></span>
+                                    <button @click="updateQuantity(item, 1)"
+                                            class="px-3 py-1 border-l hover:bg-gray-100">
+                                        +
+                                    </button>
+                                </div>
+                                <button @click="removeItem(item)"
+                                        class="text-red-600 hover:text-red-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Resumen del carrito -->
+                <div class="mt-6">
+                    <div class="flex justify-between text-lg font-semibold">
+                        <span>Total:</span>
+                        <span x-text="formatPrice(total)"></span>
+                    </div>
+                    <button @click="proceedToCheckout"
+                            class="mt-4 w-full bg-pink-600 text-white py-3 px-6 rounded-lg hover:bg-pink-700">
+                        Proceder al pago
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="items.length === 0">
+            <div class="text-center py-8">
+                <p class="text-gray-600">Tu carrito está vacío</p>
+                <a href="{% url 'product_list' %}" 
+                   class="mt-4 inline-block text-pink-600 hover:text-pink-800">
+                    Continuar comprando
+                </a>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('cart', () => ({
+        items: [],
+
+        init() {
+            this.items = JSON.parse(localStorage.getItem('cart') || '[]')
+        },
+
+        get total() {
+            return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        },
+
+        updateQuantity(item, change) {
+            const index = this.items.findIndex(i => i.id === item.id)
+            if (index > -1) {
+                const newQuantity = this.items[index].quantity + change
+                if (newQuantity > 0) {
+                    this.items[index].quantity = newQuantity
+                    this.saveCart()
+                }
+            }
+        },
+
+        removeItem(item) {
+            this.items = this.items.filter(i => i.id !== item.id)
+            this.saveCart()
+        },
+
+        saveCart() {
+            localStorage.setItem('cart', JSON.stringify(this.items))
+            this.$dispatch('cart-updated', this.items.length)
+        },
+
+        formatPrice(price) {
+            return `S/. ${parseFloat(price).toFixed(2)}`
+        },
+
+        proceedToCheckout() {
+            window.location.href = "{% url 'checkout' %}"
+        }
+    }))
+})
+</script>
+{% endblock %} 
