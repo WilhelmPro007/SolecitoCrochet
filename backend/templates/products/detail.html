@@ -67,24 +67,5 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('productDetail', () => ({
-        addToCart(quantity) {
-            const item = {
-                id: {{ product.id }},
-                name: '{{ product.name }}',
-                price: {{ product.price }},
-                quantity: quantity
-            }
-            
-            // Dispatch event to update cart
-            this.$dispatch('add-to-cart', item)
-            
-            // Show confirmation message
-            alert('Producto agregado al carrito')
-        }
-    }))
-})
-</script>
+
 {% endblock %} 

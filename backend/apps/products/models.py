@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -13,6 +15,39 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def get_default_categories(cls):
+        return [
+            {
+                'name': 'Amigurumis',
+                'description': 'Muñecos y figuras tejidas en crochet'
+            },
+            {
+                'name': 'Accesorios',
+                'description': 'Gorros, bufandas, guantes y otros accesorios tejidos'
+            },
+            {
+                'name': 'Decoración',
+                'description': 'Artículos decorativos para el hogar'
+            },
+            {
+                'name': 'Ropa',
+                'description': 'Prendas de vestir tejidas a crochet'
+            },
+            {
+                'name': 'Bebés',
+                'description': 'Artículos tejidos para bebés y niños pequeños'
+            }
+        ]
+
+@receiver(post_migrate)
+def create_default_categories(sender, **kwargs):
+    if sender.name == 'products':  # Solo ejecutar para la app 'products'
+        Category = sender.get_model('Category')
+        if Category.objects.count() == 0:  # Solo crear si no existen categorías
+            for category_data in Category.get_default_categories():
+                Category.objects.create(**category_data)
 
 class Product(models.Model):
     name = models.CharField(max_length=200)

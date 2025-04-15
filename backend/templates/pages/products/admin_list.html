@@ -1,0 +1,433 @@
+{% extends 'layouts/main.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Productos - SolecitoCrochet{% endblock %}
+
+{% block extra_head %}
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- CSRF Token -->
+{% csrf_token %}
+
+<div x-cloak x-data="{ 
+    products: [],
+    categories: [],
+    showModal: false,
+    showDeleteModal: false,
+    editingProduct: null,
+    productToDelete: null,
+    previewImage: null,
+    form: {
+        name: '',
+        description: '',
+        price: '',
+        stock: '',
+        category: '',
+        image: null,
+        is_active: true
+    },
+
+    async init() {
+        await this.loadCategories();
+        await this.loadProducts();
+    },
+
+    openCreateModal() {
+        this.editingProduct = null;
+        this.form = {
+            name: '',
+            description: '',
+            price: '',
+            stock: '',
+            category: '',
+            image: null,
+            is_active: true
+        };
+        this.previewImage = null;
+        this.showModal = true;
+    },
+
+    async loadCategories() {
+        try {
+            const response = await fetch('/api/v1/products/categories/');
+            if (!response.ok) throw new Error('Error al cargar categorías');
+            this.categories = await response.json();
+        } catch (error) {
+            console.error('Error cargando categorías:', error);
+        }
+    },
+
+    async loadProducts() {
+        try {
+            const response = await fetch('/api/v1/products/products/');
+            if (!response.ok) throw new Error('Error al cargar productos');
+            this.products = await response.json();
+        } catch (error) {
+            console.error('Error cargando productos:', error);
+        }
+    },
+
+    getCategoryName(categoryId) {
+        const category = this.categories.find(c => c.id === categoryId);
+        return category ? category.name : '';
+    },
+
+    openEditModal(product) {
+        this.editingProduct = product;
+        this.form = {
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            stock: product.stock,
+            category: product.category,
+            image: null,
+            is_active: product.is_active
+        };
+        this.previewImage = product.image;
+        this.showModal = true;
+    },
+
+    closeModal() {
+        this.showModal = false;
+        this.editingProduct = null;
+        this.form = {
+            name: '',
+            description: '',
+            price: '',
+            stock: '',
+            category: '',
+            image: null,
+            is_active: true
+        };
+        this.previewImage = null;
+    },
+
+    handleImageChange(event) {
+        const file = event.target.files[0];
+        if (file) {
+            this.form.image = file;
+            this.previewImage = URL.createObjectURL(file);
+        }
+    },
+
+    async saveProduct() {
+        try {
+            const formData = new FormData();
+            Object.keys(this.form).forEach(key => {
+                if (this.form[key] !== null) {
+                    formData.append(key, this.form[key]);
+                }
+            });
+
+            const url = this.editingProduct 
+                ? `/api/v1/products/products/${this.editingProduct.id}/`
+                : '/api/v1/products/products/';
+            
+            const method = this.editingProduct ? 'PATCH' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+
+            if (response.ok) {
+                await this.loadProducts();
+                this.closeModal();
+            } else {
+                const error = await response.json();
+                alert('Error al guardar el producto: ' + JSON.stringify(error));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al guardar el producto');
+        }
+    },
+
+    confirmDelete(product) {
+        this.productToDelete = product;
+        this.showDeleteModal = true;
+    },
+
+    async deleteProduct() {
+        try {
+            const response = await fetch(`/api/v1/products/products/${this.productToDelete.id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+
+            if (response.ok) {
+                await this.loadProducts();
+                this.showDeleteModal = false;
+                this.productToDelete = null;
+            } else {
+                alert('Error al eliminar el producto');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al eliminar el producto');
+        }
+    }
+}" class="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
+    <!-- Modal para crear/editar producto -->
+    <div x-show="showModal" 
+         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         x-transition
+         style="display: none;">
+        <div class="relative top-20 mx-auto p-4 sm:p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white"
+             @click.away="closeModal()">
+            <div class="mt-3">
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6" x-text="editingProduct ? 'Editar Producto' : 'Nuevo Producto'"></h3>
+                
+                <form @submit.prevent="saveProduct" class="space-y-4 sm:space-y-6">
+                    <!-- Nombre -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                        <input type="text" x-model="form.name" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
+                    </div>
+
+                    <!-- Descripción -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <textarea x-model="form.description" required rows="3"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm"></textarea>
+                    </div>
+
+                    <!-- Precio y Stock -->
+                    <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Precio</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">$</span>
+                                </div>
+                                <input type="number" step="0.01" x-model="form.price" required
+                                       class="mt-1 block w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Stock</label>
+                            <input type="number" x-model="form.stock" required
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Categoría -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Categoría</label>
+                        <select x-model="form.category" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
+                            <option value="">Selecciona una categoría</option>
+                            <template x-for="category in categories" :key="category.id">
+                                <option :value="category.id" x-text="category.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Imagen -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Imagen</label>
+                        <input type="file" @change="handleImageChange" accept="image/*"
+                               class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100">
+                        <div x-show="form.image" class="mt-2">
+                            <img :src="previewImage" class="h-20 w-20 object-cover rounded-lg">
+                        </div>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="flex items-center">
+                        <input type="checkbox" x-model="form.is_active"
+                               class="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded">
+                        <label class="ml-2 block text-sm text-gray-900">Producto Activo</label>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="flex flex-col-reverse sm:flex-row justify-end space-y-3 space-y-reverse sm:space-y-0 sm:space-x-3">
+                        <button type="button" @click="closeModal"
+                                class="w-full sm:w-auto bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="w-full sm:w-auto bg-pink-600 text-white hover:bg-pink-700 px-4 py-2 rounded-lg">
+                            <span x-text="editingProduct ? 'Guardar Cambios' : 'Crear Producto'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div x-show="showDeleteModal" 
+         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         x-transition
+         style="display: none;">
+        <div class="relative top-20 mx-auto p-4 sm:p-5 border w-full max-w-lg shadow-lg rounded-md bg-white"
+             @click.away="showDeleteModal = false">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Confirmar Eliminación</h3>
+                <p class="text-sm text-gray-500">
+                    ¿Estás seguro que deseas eliminar el producto <span x-text="productToDelete?.name" class="font-medium"></span>?
+                    Esta acción no se puede deshacer.
+                </p>
+                <div class="mt-4 flex justify-center space-x-3">
+                    <button @click="showDeleteModal = false"
+                            class="bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button @click="deleteProduct"
+                            class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-lg">
+                        Eliminar Producto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Encabezado con botón de crear -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Gestión de Productos</h1>
+        <button type="button"
+                @click="openCreateModal" 
+                class="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Nuevo Producto
+        </button>
+    </div>
+
+    <!-- Tabla de productos -->
+    <div class="bg-white shadow-md rounded-lg overflow-x-auto">
+        <div class="min-w-full divide-y divide-gray-200">
+            <!-- Vista móvil (cards) -->
+            <div class="block sm:hidden">
+                <template x-for="product in products" :key="product.id">
+                    <div class="p-4 border-b">
+                        <div class="flex items-start space-x-4">
+                            <template x-if="product.image">
+                                <img :src="product.image" :alt="product.name" class="h-16 w-16 object-cover rounded-lg flex-shrink-0">
+                            </template>
+                            <template x-if="!product.image">
+                                <div class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                            </template>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900" x-text="product.name"></p>
+                                <p class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></p>
+                                <p class="text-sm text-gray-900 mt-1">$<span x-text="product.price"></span></p>
+                                <p class="text-sm text-gray-500">Stock: <span x-text="product.stock"></span></p>
+                                <div class="mt-2 flex items-center justify-between">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                          :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                          x-text="product.is_active ? 'Activo' : 'Inactivo'">
+                                    </span>
+                                    <div class="flex space-x-4">
+                                        <button @click="openEditModal(product)" 
+                                                class="text-indigo-600 hover:text-indigo-900">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+                                        <button @click="confirmDelete(product)"
+                                                class="text-red-600 hover:text-red-900">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Vista desktop (tabla) -->
+            <table class="hidden sm:table min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imagen</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="product in products" :key="product.id">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <template x-if="product.image">
+                                    <img :src="product.image" :alt="product.name" class="h-12 w-12 object-cover rounded-lg">
+                                </template>
+                                <template x-if="!product.image">
+                                    <div class="h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                                        <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                </template>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900" x-text="product.name"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">$<span x-text="product.price"></span></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900" x-text="product.stock"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                      :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                      x-text="product.is_active ? 'Activo' : 'Inactivo'">
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-3">
+                                    <button @click="openEditModal(product)" 
+                                            class="text-indigo-600 hover:text-indigo-900">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="confirmDelete(product)"
+                                            class="text-red-600 hover:text-red-900">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %} 

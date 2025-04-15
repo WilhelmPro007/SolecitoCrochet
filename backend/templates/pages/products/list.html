@@ -5,16 +5,70 @@
 
 {% block extra_head %}
 <script src="{% static 'js/components/productList.js' %}"></script>
+<style>
+    .fade-enter-active, .fade-leave-active {
+        transition: opacity 0.3s ease;
+    }
+    .fade-enter-from, .fade-leave-to {
+        opacity: 0;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div x-data="productList">
     {% include 'components/products/product_filters.html' %}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <template x-for="product in filteredProducts" :key="product.id">
+    <!-- Lista de productos con animación -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+         x-transition:enter="fade-enter-active"
+         x-transition:enter-start="fade-enter-from"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="fade-leave-active"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="fade-leave-to">
+        <template x-for="product in paginatedProducts" :key="product.id">
             {% include 'components/products/product_card.html' %}
         </template>
+    </div>
+
+    <!-- Paginación -->
+    <div class="mt-8 flex justify-center" x-show="totalPages > 1">
+        <nav class="flex items-center gap-2">
+            <!-- Botón anterior -->
+            <button @click="previousPage"
+                    :disabled="currentPage === 1"
+                    :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
+                    class="px-3 py-1 rounded-lg bg-pink-600 text-white hover:bg-pink-700">
+                Anterior
+            </button>
+
+            <!-- Números de página -->
+            <template x-for="page in totalPages" :key="page">
+                <button @click="goToPage(page)"
+                        :class="{'bg-pink-600 text-white': currentPage === page,
+                                'bg-gray-200 text-gray-700 hover:bg-gray-300': currentPage !== page}"
+                        class="px-3 py-1 rounded-lg"
+                        x-text="page">
+                </button>
+            </template>
+
+            <!-- Botón siguiente -->
+            <button @click="nextPage"
+                    :disabled="currentPage === totalPages"
+                    :class="{'opacity-50 cursor-not-allowed': currentPage === totalPages}"
+                    class="px-3 py-1 rounded-lg bg-pink-600 text-white hover:bg-pink-700">
+                Siguiente
+            </button>
+        </nav>
+    </div>
+
+    <!-- Mensaje cuando no hay resultados -->
+    <div x-show="filteredAndSortedProducts.length === 0"
+         class="text-center py-12">
+        <p class="text-gray-500 text-lg">
+            No se encontraron productos que coincidan con los filtros seleccionados
+        </p>
     </div>
 </div>
 {% endblock %} 

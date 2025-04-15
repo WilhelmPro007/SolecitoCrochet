@@ -37,9 +37,8 @@ SolecitoCrochet/
 │   │   ├── urls.py           # URLs principales del proyecto
 │   │   └── wsgi.py
 │   ├── apps/                 # Aplicaciones backend (separadas por módulos)
-│   │   ├── core/             # Aplicación principal/core
 │   │   ├── products/         # Gestión de productos
-│   │   ├── orders/           # Gestión de pedidos
+│   │   ├── cart/         # Gestión de cart
 │   │   └── users/            # Gestión de usuarios
 │   ├── static/               # Archivos estáticos (CSS, JS, imágenes, etc.)
 │   │   ├── css/
@@ -51,7 +50,7 @@ SolecitoCrochet/
 │   │   ├── products/
 │   │   │   ├── list.html
 │   │   │   └── detail.html
-│   │   ├── orders/
+│   │   ├── cart/
 │   │   │   ├── checkout.html
 │   │   │   └── confirmation.html
 │   │   └── users/

@@ -31,12 +31,10 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     path('register/', RegisterView.as_view(), name='register'),
     
-    # API URLs
-    path('api/v1/', include([
-        path('products/', include('apps.products.api_urls')),
-        path('orders/', include('apps.orders.api_urls')),
-        path('users/', include('apps.users.api_urls')),
-    ])),
+    # API URLs - Simplificando la estructura
+    path('api/v1/products/', include('apps.products.api_urls')),
+    path('api/v1/orders/', include('apps.orders.api_urls')),
+    path('api/v1/users/', include('apps.users.api_urls')),
     path('api-auth/', include('rest_framework.urls')),
     
     # Frontend URLs

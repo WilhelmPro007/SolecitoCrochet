@@ -1,0 +1,81 @@
+{% extends 'layouts/main.html' %}
+{% load static %}
+
+{% block title %}Eliminar Producto - {{ product.name }} - SolecitoCrochet{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-lg mx-auto">
+        <!-- Panel de confirmación -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <div class="text-center">
+                <!-- Icono de advertencia -->
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+
+                <h3 class="text-lg font-medium text-gray-900 mb-2">
+                    Confirmar Eliminación
+                </h3>
+
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        ¿Estás seguro que deseas eliminar el producto <strong>{{ product.name }}</strong>?
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+
+                <!-- Información del producto -->
+                <div class="mt-4 border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-center mb-4">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" 
+                                 alt="{{ product.name }}" 
+                                 class="h-24 w-24 object-cover rounded-lg">
+                        {% else %}
+                            <div class="h-24 w-24 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <dl class="text-sm text-gray-600">
+                        <div class="flex justify-between py-1">
+                            <dt>Categoría:</dt>
+                            <dd>{{ product.category.name }}</dd>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <dt>Precio:</dt>
+                            <dd>${{ product.price }}</dd>
+                        </div>
+                        <div class="flex justify-between py-1">
+                            <dt>Stock:</dt>
+                            <dd>{{ product.stock }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="mt-6 flex justify-center space-x-3">
+                    <a href="{% url 'products:admin_list' %}" 
+                       class="bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg">
+                        Cancelar
+                    </a>
+                    <form method="post" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-lg">
+                            Eliminar Producto
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

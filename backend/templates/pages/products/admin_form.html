@@ -1,0 +1,189 @@
+{% extends 'layouts/main.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Editar Producto - {{ form.instance.name }}
+    {% else %}
+        Nuevo Producto
+    {% endif %} 
+    - SolecitoCrochet
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <!-- Encabezado -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">
+                {% if form.instance.pk %}
+                    Editar Producto: {{ form.instance.name }}
+                {% else %}
+                    Crear Nuevo Producto
+                {% endif %}
+            </h1>
+        </div>
+
+        <!-- Formulario -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">
+                                {{ form.non_field_errors }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Nombre -->
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Nombre del Producto
+                    </label>
+                    <div class="mt-1">
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Descripción
+                    </label>
+                    <div class="mt-1">
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Precio y Stock en la misma fila -->
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div>
+                        <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Precio
+                        </label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            {{ form.price }}
+                            {% if form.price.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.price.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.stock.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Stock
+                        </label>
+                        <div class="mt-1">
+                            {{ form.stock }}
+                            {% if form.stock.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.stock.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categoría -->
+                <div>
+                    <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Categoría
+                    </label>
+                    <div class="mt-1">
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.category.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Imagen -->
+                <div>
+                    <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Imagen del Producto
+                    </label>
+                    <div class="mt-1 flex items-center">
+                        {% if form.instance.image %}
+                        <div class="mr-4">
+                            <img src="{{ form.instance.image.url }}" alt="{{ form.instance.name }}" class="h-20 w-20 object-cover rounded-lg">
+                        </div>
+                        {% endif %}
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.image.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Estado -->
+                <div class="flex items-center">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm text-gray-900">
+                        Producto Activo
+                    </label>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex justify-end space-x-3">
+                    <a href="{% url 'products:admin_list' %}" 
+                       class="bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg">
+                        Cancelar
+                    </a>
+                    <button type="submit" 
+                            class="bg-pink-600 text-white hover:bg-pink-700 px-4 py-2 rounded-lg">
+                        {% if form.instance.pk %}
+                            Guardar Cambios
+                        {% else %}
+                            Crear Producto
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Añadir clases de Tailwind a los campos del formulario
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm";
+        const selectClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm";
+        const textareaClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm";
+        const checkboxClass = "h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded";
+
+        const form = document.querySelector('form');
+        form.querySelectorAll('input[type="text"], input[type="number"], input[type="email"]').forEach(input => {
+            input.className = inputClass;
+        });
+        form.querySelectorAll('select').forEach(select => {
+            select.className = selectClass;
+        });
+        form.querySelectorAll('textarea').forEach(textarea => {
+            textarea.className = textareaClass;
+        });
+        form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.className = checkboxClass;
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 
