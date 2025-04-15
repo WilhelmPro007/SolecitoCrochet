@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,10 +24,10 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 min-h-full flex flex-col">
     {% include 'components/navbar.html' %}
 
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
 
