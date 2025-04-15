@@ -318,42 +318,54 @@
                 <template x-for="product in products" :key="product.id">
                     <div class="p-4 border-b">
                         <div class="flex items-start space-x-4">
-                            <template x-if="product.image">
-                                <img :src="product.image" :alt="product.name" class="h-16 w-16 object-cover rounded-lg flex-shrink-0">
-                            </template>
-                            <template x-if="!product.image">
-                                <div class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                            </template>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900" x-text="product.name"></p>
-                                <p class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></p>
-                                <p class="text-sm text-gray-900 mt-1">$<span x-text="product.price"></span></p>
-                                <p class="text-sm text-gray-500">Stock: <span x-text="product.stock"></span></p>
-                                <div class="mt-2 flex items-center justify-between">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                          :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                                          x-text="product.is_active ? 'Activo' : 'Inactivo'">
-                                    </span>
-                                    <div class="flex space-x-4">
-                                        <button @click="openEditModal(product)" 
-                                                class="text-indigo-600 hover:text-indigo-900">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            <!-- Contenido clickeable de la tarjeta -->
+                            <div class="flex-1 min-w-0 cursor-pointer" @click="openEditModal(product)">
+                                <div class="flex items-start space-x-4">
+                                    <template x-if="product.image">
+                                        <img :src="product.image" :alt="product.name" class="h-16 w-16 object-cover rounded-lg flex-shrink-0">
+                                    </template>
+                                    <template x-if="!product.image">
+                                        <div class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
-                                        </button>
-                                        <button @click="confirmDelete(product)"
-                                                class="text-red-600 hover:text-red-900">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
+                                        </div>
+                                    </template>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm font-medium text-gray-900" x-text="product.name"></p>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ml-2"
+                                                  :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                                  x-text="product.is_active ? 'Activo' : 'Inactivo'">
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></p>
+                                        <div class="flex items-center justify-between mt-1">
+                                            <p class="text-sm font-semibold text-gray-900">$<span x-text="product.price"></span></p>
+                                            <p class="text-sm text-gray-500">Stock: <span x-text="product.stock"></span></p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <!-- Botones de acción separados -->
+                            <div class="flex flex-col space-y-2">
+                                <button @click.stop="openEditModal(product)" 
+                                        class="p-2 text-indigo-600 hover:text-indigo-900 bg-indigo-50 rounded-full">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button @click.stop="confirmDelete(product)"
+                                        class="p-2 text-red-600 hover:text-red-900 bg-red-50 rounded-full">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Indicador visual de que la tarjeta es clickeable -->
+                        <div class="mt-2 text-xs text-gray-500 text-center">
+                            Toca la tarjeta para editar
                         </div>
                     </div>
                 </template>
@@ -374,8 +386,9 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-for="product in products" :key="product.id">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150 ease-in-out group">
+                            <!-- Contenido clickeable de la fila -->
+                            <td class="px-6 py-4 whitespace-nowrap" @click="openEditModal(product)">
                                 <template x-if="product.image">
                                     <img :src="product.image" :alt="product.name" class="h-12 w-12 object-cover rounded-lg">
                                 </template>
@@ -387,19 +400,19 @@
                                     </div>
                                 </template>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium text-gray-900" x-text="product.name"></div>
+                            <td class="px-6 py-4" @click="openEditModal(product)">
+                                <div class="text-sm font-medium text-gray-900 group-hover:text-pink-600" x-text="product.name"></div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" @click="openEditModal(product)">
                                 <div class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" @click="openEditModal(product)">
                                 <div class="text-sm text-gray-900">$<span x-text="product.price"></span></div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" @click="openEditModal(product)">
                                 <div class="text-sm text-gray-900" x-text="product.stock"></div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" @click="openEditModal(product)">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                                       :class="product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                                       x-text="product.is_active ? 'Activo' : 'Inactivo'">
@@ -407,14 +420,14 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-3">
-                                    <button @click="openEditModal(product)" 
-                                            class="text-indigo-600 hover:text-indigo-900">
+                                    <button @click.stop="openEditModal(product)" 
+                                            class="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </button>
-                                    <button @click="confirmDelete(product)"
-                                            class="text-red-600 hover:text-red-900">
+                                    <button @click.stop="confirmDelete(product)"
+                                            class="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
