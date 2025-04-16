@@ -22,22 +22,30 @@ from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from apps.users.views import RegisterView
 
+# Definir patrones de URL para la API
+api_patterns = [
+    path('products/', include('apps.products.api_urls')),
+    path('orders/', include('apps.orders.api_urls')),
+    path('users/', include('apps.users.api_urls')),
+    path('auth/', include('rest_framework.urls')),
+]
+
+# Definir patrones de URL principales
 urlpatterns = [
-    # Admin
+    # URLs de administración
     path('admin/', admin.site.urls),
     
-    # Authentication URLs
-    path('login/', auth_views.LoginView.as_view(template_name='pages/auth/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
-    path('register/', RegisterView.as_view(), name='register'),
+    # URLs de autenticación
+    path('auth/', include([
+        path('login/', auth_views.LoginView.as_view(template_name='pages/auth/login.html'), name='login'),
+        path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+        path('register/', RegisterView.as_view(), name='register'),
+    ])),
     
-    # API URLs - Simplificando la estructura
-    path('api/v1/products/', include('apps.products.api_urls')),
-    path('api/v1/orders/', include('apps.orders.api_urls')),
-    path('api/v1/users/', include('apps.users.api_urls')),
-    path('api-auth/', include('rest_framework.urls')),
+    # URLs de la API
+    path('api/v1/', include(api_patterns)),
     
-    # Frontend URLs
+    # URLs del frontend
     path('', TemplateView.as_view(template_name='pages/home/landing.html'), name='home'),
     path('products/', include('apps.products.urls', namespace='products')),
     path('orders/', include('apps.orders.urls', namespace='orders')),

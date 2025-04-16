@@ -5,6 +5,22 @@
 
 {% block extra_head %}
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+    .card-hover {
+        transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .image-gallery {
+        scroll-behavior: smooth;
+    }
+    .image-gallery::-webkit-scrollbar {
+        display: none;
+    }
+    [x-cloak] { display: none !important; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -29,6 +45,15 @@
         category: '',
         image: null,
         is_active: true
+    },
+
+    formatPrice(price) {
+        return new Intl.NumberFormat('es-NI', {
+            style: 'currency',
+            currency: 'NIO',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(price);
     },
 
     async init() {
@@ -228,23 +253,32 @@
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm"></textarea>
                     </div>
 
-                    <!-- Precio y Stock -->
-                    <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Precio</label>
-                            <div class="mt-1 relative rounded-md shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-gray-500 sm:text-sm">$</span>
-                                </div>
-                                <input type="number" step="0.01" x-model="form.price" required
-                                       class="mt-1 block w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
+                    <!-- Precio -->
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-gray-700">Precio (C$)</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">C$</span>
+                            </div>
+                            <input type="number" 
+                                   name="price" 
+                                   id="price" 
+                                   x-model="form.price"
+                                   step="0.01"
+                                   min="0"
+                                   class="focus:ring-primary focus:border-primary block w-full pl-10 pr-12 sm:text-sm border-gray-300 rounded-md" 
+                                   placeholder="0.00">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">NIO</span>
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Stock</label>
-                            <input type="number" x-model="form.stock" required
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
-                        </div>
+                    </div>
+
+                    <!-- Stock -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Stock</label>
+                        <input type="number" x-model="form.stock" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm">
                     </div>
 
                     <!-- Categoría -->
@@ -361,7 +395,7 @@
                             <p class="text-sm text-red-600 font-medium" x-text="productToDelete?.name"></p>
                             <p class="text-sm text-gray-500" x-text="getCategoryName(productToDelete?.category)"></p>
                             <p class="text-sm text-gray-900 mt-1">
-                                Precio: $<span x-text="productToDelete?.price"></span>
+                                Precio: $<span x-text="formatPrice(productToDelete?.price)"></span>
                             </p>
                             <p class="text-sm text-gray-500">
                                 Stock: <span x-text="productToDelete?.stock"></span> unidades
@@ -442,7 +476,7 @@
                                         </div>
                                         <p class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></p>
                                         <div class="flex items-center justify-between mt-1">
-                                            <p class="text-sm font-semibold text-gray-900">$<span x-text="product.price"></span></p>
+                                            <p class="text-sm font-semibold text-gray-900">$<span x-text="formatPrice(product.price)"></span></p>
                                             <p class="text-sm text-gray-500">Stock: <span x-text="product.stock"></span></p>
                                         </div>
                                     </div>
@@ -507,7 +541,7 @@
                                 <div class="text-sm text-gray-500" x-text="getCategoryName(product.category)"></div>
                             </td>
                             <td class="px-6 py-4" @click="openEditModal(product)">
-                                <div class="text-sm text-gray-900">$<span x-text="product.price"></span></div>
+                                <div class="text-sm text-gray-900">$<span x-text="formatPrice(product.price)"></span></div>
                             </td>
                             <td class="px-6 py-4" @click="openEditModal(product)">
                                 <div class="text-sm text-gray-900" x-text="product.stock"></div>

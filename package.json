@@ -1,0 +1,13 @@
+{
+  "name": "solecitocrochet",
+  "version": "1.0.0",
+  "description": "Tienda en línea de productos de crochet",
+  "scripts": {
+    "build:css": "tailwindcss -i ./backend/static/css/input.css -o ./backend/static/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./backend/static/css/input.css -o ./backend/static/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.6",
+    "tailwindcss": "^3.3.0"
+  }
+} 

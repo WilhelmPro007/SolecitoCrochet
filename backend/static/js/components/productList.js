@@ -1,123 +1,99 @@
-document.addEventListener('alpine:init', () => {
-    Alpine.data('productList', () => ({
+// Definición del componente productList
+function productList() {
+    return {
+        allProducts: [],
         products: [],
         categories: [],
-        searchQuery: '',
-        selectedCategory: '',
-        sortBy: 'name_asc',
-        priceRange: {
-            min: null,
-            max: null
+        filters: {
+            search: '',
+            category: '',
+            orderBy: 'name',
+            maxPrice: 1000
         },
-        stockFilter: 'all',
-        currentPage: 1,
-        itemsPerPage: 9,
-        
-        async init() {
-            await this.loadProducts()
-            await this.loadCategories()
-        },
-        
-        async loadProducts() {
-            try {
-                const response = await fetch('/api/v1/products/')
-                if (!response.ok) throw new Error('Error cargando productos')
-                this.products = await response.json()
-            } catch (error) {
-                console.error('Error:', error)
-                this.products = []
-            }
-        },
-        
-        async loadCategories() {
-            try {
-                const response = await fetch('/api/v1/categories/')
-                if (!response.ok) throw new Error('Error cargando categorías')
-                this.categories = await response.json()
-            } catch (error) {
-                console.error('Error:', error)
-                this.categories = []
-            }
-        },
-        
-        get filteredAndSortedProducts() {
-            let filtered = this.products.filter(product => {
-                // Filtro de búsqueda
-                const matchesSearch = product.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                                   product.description.toLowerCase().includes(this.searchQuery.toLowerCase())
-                
-                // Filtro de categoría
-                const matchesCategory = !this.selectedCategory || 
-                                     product.category == this.selectedCategory
-                
-                // Filtro de precio
-                const matchesPrice = (!this.priceRange.min || product.price >= this.priceRange.min) &&
-                                   (!this.priceRange.max || product.price <= this.priceRange.max)
-                
-                // Filtro de stock
-                const matchesStock = this.stockFilter === 'all' ||
-                                   (this.stockFilter === 'in_stock' && product.stock > 0) ||
-                                   (this.stockFilter === 'out_of_stock' && product.stock === 0)
-                
-                return matchesSearch && matchesCategory && matchesPrice && matchesStock
-            })
+        loading: false,
+        error: null,
 
-            // Ordenamiento
-            filtered.sort((a, b) => {
-                switch(this.sortBy) {
-                    case 'name_asc':
-                        return a.name.localeCompare(b.name)
-                    case 'name_desc':
-                        return b.name.localeCompare(a.name)
-                    case 'price_asc':
-                        return a.price - b.price
-                    case 'price_desc':
-                        return b.price - a.price
-                    case 'newest':
-                        return new Date(b.created_at) - new Date(a.created_at)
-                    default:
-                        return 0
+        init() {
+            // Obtener los datos iniciales del template
+            this.allProducts = JSON.parse(document.getElementById('initial-products').textContent);
+            this.categories = JSON.parse(document.getElementById('initial-categories').textContent);
+            this.applyFilters();
+        },
+
+        formatPrice(price) {
+            return new Intl.NumberFormat('es-ES', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(price);
+        },
+
+        applyFilters() {
+            this.loading = true;
+            let filteredProducts = [...this.allProducts];
+
+            // Aplicar filtro de búsqueda
+            if (this.filters.search) {
+                const searchTerm = this.filters.search.toLowerCase();
+                filteredProducts = filteredProducts.filter(product => 
+                    product.fields.name.toLowerCase().includes(searchTerm) ||
+                    product.fields.description.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Aplicar filtro de categoría
+            if (this.filters.category) {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.fields.category === parseInt(this.filters.category)
+                );
+            }
+
+            // Aplicar filtro de precio máximo
+            if (this.filters.maxPrice) {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.fields.price <= this.filters.maxPrice
+                );
+            }
+
+            // Aplicar ordenamiento
+            filteredProducts.sort((a, b) => {
+                const field = this.filters.orderBy.startsWith('-') ? 
+                    this.filters.orderBy.slice(1) : this.filters.orderBy;
+                const direction = this.filters.orderBy.startsWith('-') ? -1 : 1;
+                
+                if (field === 'price') {
+                    return direction * (a.fields.price - b.fields.price);
                 }
-            })
+                if (field === 'name') {
+                    return direction * a.fields.name.localeCompare(b.fields.name);
+                }
+                if (field === 'created_at') {
+                    return direction * (new Date(a.fields.created_at) - new Date(b.fields.created_at));
+                }
+                return 0;
+            });
 
-            return filtered
+            this.products = filteredProducts;
+            this.loading = false;
         },
 
-        get paginatedProducts() {
-            const start = (this.currentPage - 1) * this.itemsPerPage
-            const end = start + this.itemsPerPage
-            return this.filteredAndSortedProducts.slice(start, end)
-        },
-
-        get totalPages() {
-            return Math.ceil(this.filteredAndSortedProducts.length / this.itemsPerPage)
-        },
-
-        nextPage() {
-            if (this.currentPage < this.totalPages) {
-                this.currentPage++
-            }
-        },
-
-        previousPage() {
-            if (this.currentPage > 1) {
-                this.currentPage--
-            }
-        },
-
-        goToPage(page) {
-            if (page >= 1 && page <= this.totalPages) {
-                this.currentPage = page
-            }
-        },
-        
         addToCart(product) {
-            cartStore.addItem(product)
-            // Mostrar notificación de éxito
-            this.$dispatch('notify', {
-                message: 'Producto agregado al carrito',
-                type: 'success'
-            })
+            if (window.Alpine.store('cart')) {
+                window.Alpine.store('cart').addItem(product);
+                alert('Producto añadido al carrito');
+            } else {
+                console.error('El store del carrito no está disponible');
+                alert('No se pudo agregar el producto al carrito');
+            }
+        },
+
+        resetPriceFilter() {
+            this.filters.maxPrice = 1000;
+            this.applyFilters();
         }
-    }))
-}) 
+    };
+}
+
+// Registrar el componente con Alpine.js
+document.addEventListener('alpine:init', () => {
+    Alpine.data('productList', productList);
+}); 

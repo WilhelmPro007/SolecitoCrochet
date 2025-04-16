@@ -4,71 +4,428 @@
 {% block title %}Productos - SolecitoCrochet{% endblock %}
 
 {% block extra_head %}
-<script src="{% static 'js/components/productList.js' %}"></script>
 <style>
+    [x-cloak] { display: none !important; }
     .fade-enter-active, .fade-leave-active {
         transition: opacity 0.3s ease;
     }
     .fade-enter-from, .fade-leave-to {
         opacity: 0;
     }
+    
+    /* Estilos para el modal */
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        transition: opacity 0.3s ease;
+    }
+    
+    .modal-content {
+        transform: scale(0.95);
+        transition: transform 0.3s ease;
+    }
+    
+    .modal-content.show {
+        transform: scale(1);
+    }
+    
+    /* Estilos para la galería de imágenes */
+    .gallery-thumb {
+        cursor: pointer;
+        transition: opacity 0.3s ease;
+    }
+    
+    .gallery-thumb:hover {
+        opacity: 0.8;
+    }
+    
+    .gallery-thumb.active {
+        border: 2px solid theme('colors.primary');
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div x-data="productList">
-    {% include 'components/products/product_filters.html' %}
+<!-- Datos iniciales -->
+<script type="application/json" id="initial-products">
+    {{ initial_products_json|safe }}
+</script>
+<script type="application/json" id="initial-categories">
+    {{ categories_json|safe }}
+</script>
 
-    <!-- Lista de productos con animación -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-         x-transition:enter="fade-enter-active"
-         x-transition:enter-start="fade-enter-from"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="fade-leave-active"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="fade-leave-to">
-        <template x-for="product in paginatedProducts" :key="product.id">
-            {% include 'components/products/product_card.html' %}
+<div class="container mx-auto px-4 py-8" 
+     x-data="productList"
+     x-init="init">
+    {% csrf_token %}
+    
+    <!-- Encabezado con botón de administración -->
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Nuestros Productos</h1>
+        {% if request.user.is_staff %}
+        <a href="{% url 'products:admin_list' %}" 
+           class="bg-primary hover:bg-opacity-90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Administrar Productos</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filtros -->
+    <div class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4" x-cloak>
+        <!-- Búsqueda -->
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center">
+                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+            </span>
+            <input class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                   type="text" 
+                   x-model="filters.search" 
+                   @input.debounce.300ms="applyFilters()" 
+                   placeholder="Buscar productos...">
+        </div>
+
+        <!-- Categoría -->
+        <div>
+            <select class="w-full py-2 px-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                    x-model="filters.category" 
+                    @change="applyFilters()">
+                <option value="">Todas las categorías</option>
+                <template x-for="category in categories" :key="category.pk">
+                    <option :value="category.pk" x-text="category.fields.name"></option>
+                </template>
+            </select>
+        </div>
+
+        <!-- Ordenar por -->
+        <div>
+            <select class="w-full py-2 px-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                    x-model="filters.orderBy" 
+                    @change="applyFilters()">
+                <option value="name">Nombre (A-Z)</option>
+                <option value="-name">Nombre (Z-A)</option>
+                <option value="price">Precio (Menor a Mayor)</option>
+                <option value="-price">Precio (Mayor a Menor)</option>
+                <option value="-created_at">Más recientes</option>
+            </select>
+        </div>
+
+        <!-- Precio máximo -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Precio máximo: <span x-text="formatPrice(filters.maxPrice)"></span>
+            </label>
+            <input class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                   type="range" 
+                   x-model.number="filters.maxPrice" 
+                   @change="applyFilters()" 
+                   min="0" 
+                   max="1000" 
+                   step="10">
+        </div>
+    </div>
+
+    <!-- Estado de carga -->
+    <div x-show="loading" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p class="mt-2 text-gray-500">Cargando productos...</p>
+    </div>
+
+    <!-- Mensaje de error -->
+    <div x-show="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+        <span x-text="error"></span>
+    </div>
+
+    <!-- Lista de productos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" x-show="!loading">
+        <template x-for="product in products" :key="product.pk">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <img :src="product.fields.image" :alt="product.fields.name" class="w-full h-48 object-cover cursor-pointer"
+                     @click="openProductModal(product)">
+                <div class="p-4" @click="openProductModal(product)">
+                    <h3 class="text-lg font-semibold mb-2" x-text="product.fields.name"></h3>
+                    <p class="text-gray-600 mb-4 line-clamp-2" x-text="product.fields.description"></p>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <span class="text-primary text-xl font-bold" x-text="formatPrice(product.fields.price)"></span>
+                        <div class="flex flex-wrap gap-2">
+                            <button @click="openProductModal(product)" 
+                                    class="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors w-[100px]">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                Ver
+                            </button>
+                            <button @click="addToCart(product)" 
+                                    class="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors w-[100px]">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </template>
     </div>
 
-    <!-- Paginación -->
-    <div class="mt-8 flex justify-center" x-show="totalPages > 1">
-        <nav class="flex items-center gap-2">
-            <!-- Botón anterior -->
-            <button @click="previousPage"
-                    :disabled="currentPage === 1"
-                    :class="{'opacity-50 cursor-not-allowed': currentPage === 1}"
-                    class="px-3 py-1 rounded-lg bg-pink-600 text-white hover:bg-pink-700">
-                Anterior
-            </button>
-
-            <!-- Números de página -->
-            <template x-for="page in totalPages" :key="page">
-                <button @click="goToPage(page)"
-                        :class="{'bg-pink-600 text-white': currentPage === page,
-                                'bg-gray-200 text-gray-700 hover:bg-gray-300': currentPage !== page}"
-                        class="px-3 py-1 rounded-lg"
-                        x-text="page">
-                </button>
-            </template>
-
-            <!-- Botón siguiente -->
-            <button @click="nextPage"
-                    :disabled="currentPage === totalPages"
-                    :class="{'opacity-50 cursor-not-allowed': currentPage === totalPages}"
-                    class="px-3 py-1 rounded-lg bg-pink-600 text-white hover:bg-pink-700">
-                Siguiente
-            </button>
-        </nav>
+    <!-- Mensaje cuando no hay productos -->
+    <div class="text-center py-12" x-show="products.length === 0 && !loading">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No se encontraron productos</h3>
+        <p class="mt-1 text-sm text-gray-500">Prueba ajustando los filtros de búsqueda.</p>
     </div>
 
-    <!-- Mensaje cuando no hay resultados -->
-    <div x-show="filteredAndSortedProducts.length === 0"
-         class="text-center py-12">
-        <p class="text-gray-500 text-lg">
-            No se encontraron productos que coincidan con los filtros seleccionados
-        </p>
+    <!-- Modal de detalles del producto -->
+    <div x-show="selectedProduct" 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         x-cloak
+         @keydown.escape.window="closeProductModal()">
+        <div class="modal-backdrop fixed inset-0" @click="closeProductModal()"></div>
+        
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content relative bg-white w-full max-w-4xl rounded-xl shadow-2xl mx-auto"
+                 :class="{ 'show': selectedProduct }"
+                 @click.stop>
+                <!-- Botón cerrar -->
+                <button @click="closeProductModal()" 
+                        class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
+                    <!-- Galería de imágenes -->
+                    <div class="space-y-4">
+                        <div class="aspect-w-1 aspect-h-1 w-full">
+                            <img :src="currentImage || selectedProduct?.fields.image" 
+                                 :alt="selectedProduct?.fields.name"
+                                 class="w-full h-[400px] object-cover rounded-lg">
+                        </div>
+                        
+                        <!-- Miniaturas -->
+                        <div class="flex space-x-2 overflow-x-auto py-2">
+                            <template x-for="(image, index) in selectedProduct?.fields.additional_images || []" :key="index">
+                                <img :src="image" 
+                                     :alt="'Imagen ' + (index + 1)"
+                                     class="w-20 h-20 object-cover rounded gallery-thumb"
+                                     :class="{ 'active': currentImage === image }"
+                                     @click="currentImage = image">
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Información del producto -->
+                    <div class="space-y-6">
+                        <h2 class="text-3xl font-bold text-gray-900" x-text="selectedProduct?.fields.name"></h2>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-3xl font-bold text-primary" 
+                                  x-text="formatPrice(selectedProduct?.fields.price)"></span>
+                            <span class="text-sm text-gray-500" 
+                                  x-text="'Stock: ' + selectedProduct?.fields.stock"></span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold">Descripción</h3>
+                            <p class="text-gray-600" x-text="selectedProduct?.fields.description"></p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold">Detalles</h3>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span x-text="'Categoría: ' + getCategoryName(selectedProduct?.fields.category)"></span>
+                                </li>
+                                
+                            </ul>
+                        </div>
+
+                        <!-- Selector de cantidad y botón de agregar al carrito -->
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4">
+                                <label class="text-gray-700">Cantidad:</label>
+                                <div class="flex items-center border rounded-lg">
+                                    <button @click="quantity > 1 && quantity--" 
+                                            class="px-3 py-2 text-gray-600 hover:bg-gray-100">
+                                        -
+                                    </button>
+                                    <input type="number" 
+                                           x-model.number="quantity" 
+                                           min="1" 
+                                           :max="selectedProduct?.fields.stock"
+                                           class="w-16 text-center border-x py-2">
+                                    <button @click="quantity < selectedProduct?.fields.stock && quantity++" 
+                                            class="px-3 py-2 text-gray-600 hover:bg-gray-100">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button @click="addToCartFromModal()" 
+                                    class="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-opacity-90 transition-colors flex items-center justify-center space-x-2">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <span>Agregar al carrito</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Definición del componente productList
+    function productList() {
+        return {
+            allProducts: [],
+            products: [],
+            categories: [],
+            selectedProduct: null,
+            currentImage: null,
+            quantity: 1,
+            filters: {
+                search: '',
+                category: '',
+                orderBy: 'name',
+                maxPrice: 1000
+            },
+            loading: false,
+            error: null,
+
+            init() {
+                // Obtener los datos iniciales del template
+                this.allProducts = JSON.parse(document.getElementById('initial-products').textContent);
+                this.categories = JSON.parse(document.getElementById('initial-categories').textContent);
+                this.applyFilters();
+            },
+
+            formatPrice(price) {
+                return new Intl.NumberFormat('es-NI', {
+                    style: 'currency',
+                    currency: 'NIO',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(price);
+            },
+
+            applyFilters() {
+                this.loading = true;
+                let filteredProducts = [...this.allProducts];
+
+                // Aplicar filtro de búsqueda
+                if (this.filters.search) {
+                    const searchTerm = this.filters.search.toLowerCase();
+                    filteredProducts = filteredProducts.filter(product => 
+                        product.fields.name.toLowerCase().includes(searchTerm) ||
+                        product.fields.description.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                // Aplicar filtro de categoría
+                if (this.filters.category) {
+                    filteredProducts = filteredProducts.filter(product => 
+                        product.fields.category === parseInt(this.filters.category)
+                    );
+                }
+
+                // Aplicar filtro de precio máximo
+                if (this.filters.maxPrice) {
+                    filteredProducts = filteredProducts.filter(product => 
+                        product.fields.price <= this.filters.maxPrice
+                    );
+                }
+
+                // Aplicar ordenamiento
+                filteredProducts.sort((a, b) => {
+                    const field = this.filters.orderBy.startsWith('-') ? 
+                        this.filters.orderBy.slice(1) : this.filters.orderBy;
+                    const direction = this.filters.orderBy.startsWith('-') ? -1 : 1;
+                    
+                    if (field === 'price') {
+                        return direction * (a.fields.price - b.fields.price);
+                    }
+                    if (field === 'name') {
+                        return direction * a.fields.name.localeCompare(b.fields.name);
+                    }
+                    if (field === 'created_at') {
+                        return direction * (new Date(a.fields.created_at) - new Date(b.fields.created_at));
+                    }
+                    return 0;
+                });
+
+                this.products = filteredProducts;
+                this.loading = false;
+            },
+
+            openProductModal(product) {
+                this.selectedProduct = product;
+                this.currentImage = product.fields.image;
+                this.quantity = 1;
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeProductModal() {
+                this.selectedProduct = null;
+                this.currentImage = null;
+                this.quantity = 1;
+                document.body.style.overflow = '';
+            },
+
+            getCategoryName(categoryId) {
+                const category = this.categories.find(c => c.pk === categoryId);
+                return category ? category.fields.name : 'Sin categoría';
+            },
+
+            addToCartFromModal() {
+                if (window.Alpine.store('cart')) {
+                    const product = {...this.selectedProduct};
+                    product.fields.quantity = this.quantity;
+                    window.Alpine.store('cart').addItem(product);
+                    this.closeProductModal();
+                    alert('Producto añadido al carrito');
+                } else {
+                    console.error('El store del carrito no está disponible');
+                    alert('No se pudo agregar el producto al carrito');
+                }
+            },
+
+            addToCart(product) {
+                if (window.Alpine.store('cart')) {
+                    window.Alpine.store('cart').addItem(product);
+                    alert('Producto añadido al carrito');
+                } else {
+                    console.error('El store del carrito no está disponible');
+                    alert('No se pudo agregar el producto al carrito');
+                }
+            },
+
+            resetPriceFilter() {
+                this.filters.maxPrice = 1000;
+                this.applyFilters();
+            }
+        };
+    }
+
+    // Registrar el componente con Alpine.js
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('productList', productList);
+    });
+</script>
 {% endblock %} 

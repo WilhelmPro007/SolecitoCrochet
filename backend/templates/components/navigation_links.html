@@ -2,16 +2,16 @@
 <div class="hidden md:block">
     <div class="ml-10 flex items-baseline space-x-4">
         <a href="{% url 'products:list' %}" 
-           class="text-white hover:bg-pink-700 px-3 py-2 rounded-md">
+           class="text-white hover:bg-pink-700 px-3 py-2 rounded-md {% if request.resolver_match.namespace == 'products' %}bg-pink-700{% endif %}">
             Productos
         </a>
         {% if user.is_authenticated %}
             <a href="{% url 'orders:list' %}" 
-               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md">
+               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md {% if request.resolver_match.namespace == 'orders' %}bg-pink-700{% endif %}">
                 Mis Pedidos
             </a>
             <a href="{% url 'users:profile' %}" 
-               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md">
+               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md {% if request.resolver_match.namespace == 'users' %}bg-pink-700{% endif %}">
                 Mi Perfil
             </a>
             <form action="{% url 'logout' %}" method="post" class="inline">
@@ -23,11 +23,11 @@
             </form>
         {% else %}
             <a href="{% url 'login' %}" 
-               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md">
+               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md {% if request.resolver_match.url_name == 'login' %}bg-pink-700{% endif %}">
                 Iniciar Sesión
             </a>
             <a href="{% url 'register' %}" 
-               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md">
+               class="text-white hover:bg-pink-700 px-3 py-2 rounded-md {% if request.resolver_match.url_name == 'register' %}bg-pink-700{% endif %}">
                 Registrarse
             </a>
         {% endif %}
