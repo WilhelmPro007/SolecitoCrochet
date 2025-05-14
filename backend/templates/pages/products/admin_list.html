@@ -37,6 +37,7 @@
     previewImage: null,
     additionalPreviews: [],
     additionalImages: [],
+    currentImageIndex: 0,
     form: {
         name: '',
         description: '',
@@ -45,6 +46,37 @@
         category: '',
         image: null,
         is_active: true
+    },
+    showFullscreenGallery: false,
+    currentImage: null,
+    showDeleteConfirm: false,
+    imageToDelete: null,
+
+    get currentImage() {
+        if (!this.editingProduct) return '';
+        const allImages = [this.editingProduct.image, ...this.editingProduct.additional_images.map(img => img.image)];
+        return allImages[this.currentImageIndex] || '';
+    },
+
+    get totalImages() {
+        if (!this.editingProduct) return 0;
+        return 1 + (this.editingProduct.additional_images?.length || 0);
+    },
+
+    nextImage() {
+        if (this.currentImageIndex < this.totalImages - 1) {
+            this.currentImageIndex++;
+        } else {
+            this.currentImageIndex = 0;
+        }
+    },
+
+    previousImage() {
+        if (this.currentImageIndex > 0) {
+            this.currentImageIndex--;
+        } else {
+            this.currentImageIndex = this.totalImages - 1;
+        }
     },
 
     formatPrice(price) {
@@ -105,6 +137,7 @@
 
     openEditModal(product) {
         this.editingProduct = product;
+        this.currentImageIndex = 0;
         this.form = {
             name: product.name,
             description: product.description,
@@ -123,6 +156,7 @@
     closeModal() {
         this.showModal = false;
         this.editingProduct = null;
+        this.currentImageIndex = 0;
         this.form = {
             name: '',
             description: '',
@@ -226,6 +260,55 @@
             console.error('Error:', error);
             alert('Error al eliminar el producto');
         }
+    },
+
+    get allImages() {
+        if (!this.editingProduct) return [];
+        return [this.editingProduct.image, ...this.editingProduct.additional_images.map(img => img.image)];
+    },
+
+    deleteImage(index) {
+        this.imageToDelete = index;
+        this.showDeleteConfirm = true;
+    },
+
+    confirmDeleteImage() {
+        if (this.imageToDelete === 0) {
+            // Eliminar imagen principal
+            this.form.image = null;
+            this.previewImage = null;
+        } else {
+            // Eliminar imagen adicional
+            const additionalIndex = this.imageToDelete - 1;
+            this.form.additional_images.splice(additionalIndex, 1);
+        }
+        this.showDeleteConfirm = false;
+        this.imageToDelete = null;
+        this.currentImage = this.allImages[0] || null;
+        this.currentImageIndex = 0;
+    },
+
+    handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            if (file instanceof File) {
+                this.form.image = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.previewImage = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                console.error('El archivo seleccionado no es válido');
+            }
+        }
+    },
+
+    handleAdditionalImagesUpload(event) {
+        const files = Array.from(event.target.files);
+        if (files.length > 0) {
+            this.form.additional_images = files;
+        }
     }
 }" class="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
     <!-- Modal para crear/editar producto -->
@@ -295,38 +378,138 @@
 
                     <!-- Imágenes -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Imágenes</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Imágenes del Producto</label>
                         
+                        <!-- Carrusel de imágenes -->
+                        <div class="relative mb-6" x-show="editingProduct && (editingProduct.image || editingProduct.additional_images.length > 0)">
+                            <div class="relative h-48 bg-gray-100 rounded-lg overflow-hidden">
+                                <!-- Imagen actual -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <img :src="currentImage" :alt="editingProduct.name" 
+                                         class="max-h-full max-w-full object-contain">
+                                </div>
+                                
+                                <!-- Flechas de navegación -->
+                                <button type="button" 
+                                        @click="previousImage"
+                                        class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg"
+                                        x-show="totalImages > 1">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                    </svg>
+                                </button>
+                                <button type="button" 
+                                        @click="nextImage"
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg"
+                                        x-show="totalImages > 1">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                                
+                                <!-- Indicador de posición -->
+                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1" x-show="totalImages > 1">
+                                    <template x-for="(_, index) in Array.from({length: totalImages})" :key="index">
+                                        <div class="w-2 h-2 rounded-full"
+                                             :class="currentImageIndex === index ? 'bg-pink-600' : 'bg-gray-300'">
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Imagen Principal -->
-                        <div class="mb-4">
-                            <label class="block text-sm text-gray-600 mb-1">Imagen Principal</label>
-                            <input type="file" @change="handleImageChange" accept="image/*"
-                                   class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100">
-                            <div x-show="previewImage" class="mt-2">
-                                <img :src="previewImage" class="h-20 w-20 object-cover rounded-lg">
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm text-gray-600">Imagen Principal</label>
+                                <span class="text-xs text-gray-500">PNG, JPG o GIF</span>
+                            </div>
+                            <div class="relative group">
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-pink-500 transition-colors duration-300">
+                                    <div class="relative">
+                                        <div class="relative cursor-zoom-in" @click="showFullscreenGallery = true; currentImage = previewImage || form.image; currentImageIndex = 0">
+                                            <img :src="previewImage || form.image" 
+                                                 :alt="form.name"
+                                                 class="w-full h-48 object-cover rounded-lg transition-all duration-300 hover-scale">
+                                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex flex-col items-center justify-center gap-2">
+                                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-3H6"/>
+                                                </svg>
+                                                <span class="text-white text-sm">Click para ver en pantalla completa</span>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 flex gap-2">
+                                            <button @click.stop="deleteImage(0)"
+                                                    class="bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-600 flex items-center justify-center">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <label class="flex flex-col items-center justify-center w-full h-32 cursor-pointer bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:bg-gray-100 transition-colors duration-300">
+                                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <svg class="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                                </svg>
+                                                <p class="mb-2 text-sm text-gray-500">
+                                                    <span class="font-semibold">Click para subir</span> o arrastra y suelta
+                                                </p>
+                                                <p class="text-xs text-gray-500">PNG, JPG o GIF (MAX. 2MB)</p>
+                                            </div>
+                                            <input type="file" @change="handleImageUpload" accept="image/*" class="hidden">
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Imágenes Adicionales -->
                         <div>
-                            <label class="block text-sm text-gray-600 mb-1">Imágenes Adicionales</label>
-                            <input type="file" @change="handleAdditionalImages" accept="image/*" multiple
-                                   class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100">
-                            
-                            <!-- Preview de imágenes adicionales -->
-                            <div class="mt-2 grid grid-cols-4 gap-2" x-show="additionalPreviews.length > 0">
-                                <template x-for="(preview, index) in additionalPreviews" :key="index">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm text-gray-600">Imágenes Adicionales</label>
+                                <span class="text-xs text-gray-500">PNG, JPG o GIF</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                                <template x-for="(image, index) in form.additional_images" :key="index">
                                     <div class="relative group">
-                                        <img :src="preview" class="h-20 w-20 object-cover rounded-lg">
-                                        <button type="button" @click="removeAdditionalImage(index)"
-                                                class="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                        </button>
+                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-pink-500 transition-colors duration-300">
+                                            <div class="relative cursor-zoom-in" @click="showFullscreenGallery = true; currentImage = image; currentImageIndex = index + 1">
+                                                <img :src="image" 
+                                                     :alt="'Imagen adicional ' + (index + 1)"
+                                                     class="w-full h-32 object-cover rounded-lg transition-all duration-300 hover-scale">
+                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex flex-col items-center justify-center gap-2">
+                                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-3H6"/>
+                                                    </svg>
+                                                    <span class="text-white text-xs">Click para ver en pantalla completa</span>
+                                                </div>
+                                            </div>
+                                            <div class="absolute top-2 right-2 flex gap-2">
+                                                <button @click.stop="deleteImage(index + 1)"
+                                                        class="bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-600 flex items-center justify-center">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
+                            <label class="flex flex-col items-center justify-center w-full h-32 cursor-pointer bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:bg-gray-100 transition-colors duration-300">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <p class="mb-2 text-sm text-gray-500">
+                                        <span class="font-semibold">Click para subir</span> o arrastra y suelta
+                                    </p>
+                                    <p class="text-xs text-gray-500">PNG, JPG o GIF (MAX. 2MB)</p>
+                                </div>
+                                <input type="file" @change="handleAdditionalImagesUpload" accept="image/*" multiple class="hidden">
+                            </label>
                         </div>
                     </div>
 
@@ -338,7 +521,7 @@
                     </div>
 
                     <!-- Botones -->
-                    <div class="flex flex-col-reverse sm:flex-row justify-end space-y-3 space-y-reverse sm:space-y-0 sm:space-x-3">
+                    <div class="flex flex-col-reverse sm:flex-row justify-end space-y-3 space-y-reverse sm:space-x-3">
                         <button type="button" @click="closeModal"
                                 class="w-full sm:w-auto bg-gray-100 text-gray-800 hover:bg-gray-200 px-4 py-2 rounded-lg">
                             Cancelar
@@ -426,6 +609,104 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                         Eliminar Producto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de pantalla completa para imágenes -->
+    <div x-show="showFullscreenGallery" 
+         class="fixed inset-0 z-[60] bg-black bg-opacity-90"
+         x-cloak
+         x-transition:enter="fade-enter-active"
+         x-transition:enter-start="fade-enter-from"
+         x-transition:leave="fade-leave-active"
+         x-transition:leave-end="fade-leave-to"
+         @keydown.escape.window="showFullscreenGallery = false">
+        
+        <!-- Controles de navegación -->
+        <button @click="previousImage" 
+                class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full z-10 transition-all duration-300 btn-hover"
+                x-show="totalImages > 1">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <button @click="nextImage" 
+                class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full z-10 transition-all duration-300 btn-hover"
+                x-show="totalImages > 1">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+
+        <!-- Botón cerrar -->
+        <button @click="showFullscreenGallery = false" 
+                class="absolute top-4 right-4 text-white hover:text-gray-300 z-10 transition-all duration-300 btn-hover">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <!-- Imagen principal -->
+        <div class="flex items-center justify-center h-full">
+            <img :src="currentImage" 
+                 :alt="editingProduct?.name"
+                 class="max-h-[90vh] max-w-[90vw] object-contain transition-all duration-300 hover-scale">
+        </div>
+
+        <!-- Indicador de posición -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10" x-show="totalImages > 1">
+            <template x-for="(_, index) in Array.from({length: totalImages})" :key="index">
+                <div class="w-3 h-3 rounded-full cursor-pointer transition-all duration-300"
+                     :class="currentImageIndex === index ? 'bg-pink-600' : 'bg-white/50'"
+                     @click="currentImageIndex = index">
+                </div>
+            </template>
+        </div>
+
+        <!-- Miniaturas -->
+        <div class="absolute bottom-20 left-1/2 -translate-x-1/2 flex space-x-2 overflow-x-auto py-2 max-w-[90vw] z-10">
+            <template x-for="(image, index) in allImages" :key="index">
+                <div class="relative group">
+                    <img :src="image" 
+                         :alt="'Imagen ' + (index + 1)"
+                         class="w-16 h-16 object-cover rounded cursor-pointer transition-all duration-300 hover-scale"
+                         :class="{ 'ring-2 ring-pink-600': currentImageIndex === index }"
+                         @click="currentImageIndex = index">
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div x-show="showDeleteConfirm" 
+         class="fixed inset-0 z-[70] overflow-y-auto" 
+         x-cloak
+         x-transition:enter="fade-enter-active"
+         x-transition:enter-start="fade-enter-from"
+         x-transition:leave="fade-leave-active"
+         x-transition:leave-end="fade-leave-to">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showDeleteConfirm = false"></div>
+        
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto p-6"
+                 x-transition:enter="fade-enter-active"
+                 x-transition:enter-start="fade-enter-from"
+                 x-transition:leave="fade-leave-active"
+                 x-transition:leave-end="fade-leave-to">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">¿Eliminar imagen?</h3>
+                <p class="text-gray-600 mb-6">Esta acción no se puede deshacer. ¿Estás seguro de que deseas eliminar esta imagen?</p>
+                
+                <div class="flex justify-end space-x-4">
+                    <button @click="showDeleteConfirm = false" 
+                            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors">
+                        Cancelar
+                    </button>
+                    <button @click="confirmDeleteImage" 
+                            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                        Eliminar
                     </button>
                 </div>
             </div>

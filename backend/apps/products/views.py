@@ -42,6 +42,7 @@ class ProductListView(ListView):
                     'category': product.category.pk,
                     'stock': product.stock,
                     'image': product.image.url if product.image else '',
+                    'additional_images': [img.image.url for img in product.additional_images.all()],
                     'created_at': product.created_at.isoformat(),
                     'is_active': product.is_active
                 }
